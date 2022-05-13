@@ -42,7 +42,7 @@ class Crop(Dataset):
         
         secondcrop = list(firstcrop)
         shift = randint(1,15)
-        secondcrop[1] = firstcrop[1] + shift
+        secondcrop[1] = firstcrop[1] + shift # shift in the x direction
         secondcrop = tuple(secondcrop)
         
         self.im1 = TF.crop(bigimg, *firstcrop)
@@ -52,7 +52,7 @@ class Crop(Dataset):
     
     def get_imgs(self, i):
         self.__getitem__(i)
-        return [self.im1, self.im2]
+        return [self.im1, self.im2] # used later to visualize images
 
 
 cam = glob.glob("cameras/10870/*.jpg")
@@ -135,7 +135,7 @@ for i in range(20):
     def concat(im1, im2, shift):
         comb = Image.new('RGB', (im1.width+shift, im1.height))
         comb.paste(im1, (0,0))
-        comb.paste(im2, (shift,0))
+        comb.paste(im2, (shift,0)) # paste second image "shift" pixels to the right of first image
         return comb
 
     plt.imshow(concat(im1, im2, shift))
