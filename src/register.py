@@ -77,7 +77,7 @@ class Net(nn.Module):
         self.avgpool = nn.AvgPool2d((3,3))
         self.flatten = nn.Flatten()
         self.dense1 = nn.Linear(99,50)
-        self.dense3 = nn.Linear(50,1)
+        self.dense2 = nn.Linear(50,1)
     
     def forward(self, x):
         x = self.bn1(F.gelu(self.conv1(x)))
@@ -86,7 +86,7 @@ class Net(nn.Module):
         x = self.avgpool(x)
         x = self.flatten(x)
         x = self.drop(self.dense1(x))
-        x = self.dense3(x)
+        x = self.dense2(x)
         return x
     
 model = Net()
