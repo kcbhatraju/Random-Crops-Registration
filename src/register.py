@@ -5,8 +5,11 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
+from collections import Counter
+
+import copy
 import glob
-from random import randint
+from random import shuffle, randint
 
 from PIL import ImageFile, Image
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -29,37 +32,40 @@ class Crop(Dataset):
     def __init__(self, root):
         transform = transforms.Compose([transforms.Grayscale(), transforms.Resize(IM_ORIG_SIZE), transforms.ToTensor(), transforms.GaussianBlur(5)])
         self.imgs = [transform(Image.open(img)) for img in root]
+        self.vis = []
     
     def __len__(self):
         return len(self.imgs)
     
     def __getitem__(self, i):
         bigimg = self.imgs[i]
+        self.firstcrop = list(RandomCrop.get_params(bigimg, IM_CROP_SIZE))
+        if self.firstcrop[1] > 10: self.firstcrop[1] = int((self.firstcrop[1])/25*10) # edge case handling [if firstcrop x is > 110 then secondcrop x can go up to > 110+15=125 (off of picture)]
+        self.firstcrop = tuple(self.firstcrop)
+        self.secondcrop = list(self.firstcrop)
+        shift = randint(0,15)
         
-        firstcrop = list(RandomCrop.get_params(bigimg, IM_CROP_SIZE))
-        if firstcrop[1] > 105: firstcrop[1] = (firstcrop[1])/125*105 # edge case handling [if firstcrop x is > 110 then secondcrop x can go up to > 110+15=125 (off of picture)]
-        firstcrop = tuple(firstcrop)
+        self.secondcrop[1] = self.firstcrop[1] + shift # shift in the x direction
+        self.secondcrop = tuple(self.secondcrop)
         
-        secondcrop = list(firstcrop)
-        shift = randint(1,15)
-        secondcrop[1] = firstcrop[1] + shift # shift in the x direction
-        secondcrop = tuple(secondcrop)
+        self.im1 = TF.crop(bigimg, *self.firstcrop)
+        self.im2 = TF.crop(bigimg, *self.secondcrop)
         
-        self.im1 = TF.crop(bigimg, *firstcrop)
-        self.im2 = TF.crop(bigimg, *secondcrop)
-        
+        self.vis.append([self.im1, self.im2, shift])
         return (cat([self.im1,self.im2]), tensor(shift)) # (imgs, labels)
-    
-    def get_imgs(self, i):
-        self.__getitem__(i)
-        return [self.im1, self.im2] # used later to visualize images
 
 
-cam = glob.glob("cameras/10870/*.jpg")
-trainroot = cam[:3*len(cam)//4]
-testroot = cam[3*len(cam)//4:]
+cams = glob.glob("cameras/*/")
+ims = []
+for cam in cams:
+    ims += glob.glob(f"{cam}/*.jpg")
 
-train = DataLoader(Crop(trainroot), batch_size=32, shuffle=True)
+trainroot = ims[:3*len(ims)//4]
+shuffle(trainroot)
+testroot = ims[3*len(ims)//4:]
+shuffle(testroot)
+
+train = DataLoader(Crop(trainroot), batch_size=16, shuffle=True)
 
 
 class Net(nn.Module):
@@ -68,46 +74,45 @@ class Net(nn.Module):
         set_grad_enabled(True)
         
         self.drop = nn.Dropout(p=0.2)
-        self.conv1 = nn.Conv2d(2,20,5,stride=2)
-        self.bn1 = nn.BatchNorm2d(20,affine=False)
-        self.conv2 = nn.Conv2d(20,19,5,stride=2)
-        self.bn2 = nn.BatchNorm2d(19,affine=False)
-        self.conv3 = nn.Conv2d(19,11,5,stride=2)
-        self.bn3 = nn.BatchNorm2d(11,affine=False)
+        self.relu = nn.LeakyReLU(0.1)
+        self.conv1 = nn.Conv2d(2,300,5,stride=2)
+        self.bn1 = nn.BatchNorm2d(2,affine=False)
         self.avgpool = nn.AvgPool2d((3,3))
         self.flatten = nn.Flatten()
-        self.dense1 = nn.Linear(99,50)
-        self.dense2 = nn.Linear(50,1)
+        self.dense = nn.Linear(76800,16)
     
     def forward(self, x):
-        x = self.bn1(F.gelu(self.conv1(x)))
-        x = self.bn2(F.gelu(self.conv2(x)))
-        x = self.bn3(F.gelu(self.conv3(x)))
+        x = self.relu(self.drop(self.conv1(x)))
         x = self.avgpool(x)
         x = self.flatten(x)
-        x = self.drop(self.dense1(x))
-        x = self.dense2(x)
+        x = self.dense(x)
         return x
     
 model = Net()
-criterion = nn.SmoothL1Loss()
+criterion = nn.CrossEntropyLoss()
 opt = optim.Adam(model.parameters(), lr=0.01)
 
-ep = 1
+ep = 50
 for e in range(ep):
-    print(f"Epoch {e+1}/{ep}")
     for img, lab in train:
+        print(f"Epoch {e+1}/{ep}")
         model.train()
         opt.zero_grad()
         probs = model.forward(img)
-        loss = criterion(probs.float(), lab.float()) # convert to dtype float for loss function
+        loss = criterion(probs, lab) # convert to dtype float for loss function
 
         loss.backward()
+        
+        
+        print(model.conv1.weight.grad)
+        print(model.dense.weight.grad)
+        
         opt.step()
         
         print(probs)
         print(lab)
 
+        print(loss)
 
 # visualization of predictions (20 images)
 
@@ -117,16 +122,19 @@ for i in range(20):
     model.eval()
     img, lab = test[i]
     print("True:", lab)
-    # print(img[0].shape)
     probs = model.forward(img[None,:])
-    print("Predicted:", probs)
+    top_p, top_class = probs.topk(1, dim=1)
+    print(probs)
+    print("Predicted:", top_class)
 
-    transform = transforms.ToPILImage()
-    im1, im2 = [transform(im) for im in test.get_imgs(i)]
-
-    shift = round(probs.item())
+    shift = round(top_class.item())
     print("Rounded:", shift)
+    
+    
+    transform = transforms.ToPILImage()
+    im1, im2 = [transform(im) for im in test.vis[i][:2]]
 
+    plt.axis("off")
     plt.imshow(im1)
     plt.show()
     plt.imshow(im2)
