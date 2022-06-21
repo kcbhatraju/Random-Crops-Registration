@@ -1,7 +1,7 @@
 # Random Crop Registration
 Detect if a pair of images are properly registered through the computation of optical flow. 
 
-<sub><sup>* This is part of my contribution to a Capstone Research Project involving the generation of consistent 360-degree panoramas from unregistered/incompatible images.</sup></sub>
+<sub><sup>* This is part of my contribution to a Capstone Research Project involving the generation of consistent 360-degree panoramas from unregistered/incompatible images.</sup></sub><br/>
 <sub><sup>** A portion of this project placed second in Biomedical Engineering/third in Robotics & Intelligent at the Central Kentucky Regional Science Fair.</sup></sub>
 
 ## How to Use
