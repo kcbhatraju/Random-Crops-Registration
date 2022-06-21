@@ -219,5 +219,6 @@ def evaluate(type, times=25):
     
     with open("logs/evaluate_log.txt", "a") as log:
         log.write(f"{name} Accuracy: {round(summed/times*100,2)}%\n")
-    
-if __name__ == "__main__": train()
+ 
+train()
+evaluate("train"), evaluate("test")

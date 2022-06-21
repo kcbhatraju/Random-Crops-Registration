@@ -8,10 +8,10 @@ RR7. True: 8, Predicted: 8 (Passed)
 RR8. True: 0, Predicted: 0 (Passed)
 RR9. True: 11, Predicted: 10 (Passed)
 RR10. True: 8, Predicted: 7 (Passed)
-RR1. True: 3, Predicted: 9 (Failed) # IMAGE DATA NOT PROPER
+RR1. True: 3, Predicted: 9 (Failed) # IMAGE DATA TRUNCATED
 RR11. True: 3, Predicted: 3 (Passed)
-RR2. True: 13, Predicted: 9 (Failed) # IMAGE DATA NOT PROPER
-RR12. True: 10, Predicted: 10 (Passed) # IMAGE DATA NOT PROPER
+RR2. True: 13, Predicted: 9 (Failed) # IMAGE DATA TRUNCATED
+RR12. True: 10, Predicted: 10 (Passed) # IMAGE DATA TRUNCATED
 RR13. True: 4, Predicted: 4 (Passed)
 RR14. True: 9, Predicted: 9 (Passed)
 RR15. True: 14, Predicted: 15 (Passed)
@@ -30,7 +30,7 @@ TR23. True: 7, Predicted: 8 (Passed)
 TU4. True: 14, Predicted: 14 (Failed)
 TR24. True: 6, Predicted: 7 (Passed)
 TR25. True: 8, Predicted: 8 (Passed)
-TU1. True: 0, Predicted: 9 (Passed) # IMAGE DATA NOT PROPER
+TU1. True: 0, Predicted: 9 (Passed) # IMAGE DATA TRUNCATED
 TU5. True: 0, Predicted: 1 (Failed)
 TR6. True: 3, Predicted: 0 (Failed)
 TR26. True: 8, Predicted: 9 (Passed)
